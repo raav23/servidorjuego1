@@ -1649,7 +1649,7 @@ function servidorSeQuedaCon(dineroActual,porcentaje){
 */
 
 
-var j = schedule.scheduleJob('0 0 3 * * *', function(){
+var j = schedule.scheduleJob('0 0 20 * * *', function(){
 //Datos del correo
 				var transporter = nodemailer.createTransport({
 			  service: 'gmail',
