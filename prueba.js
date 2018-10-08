@@ -1649,7 +1649,7 @@ function servidorSeQuedaCon(dineroActual,porcentaje){
 */
 
 
-var j = schedule.scheduleJob('0 16 24 * * *', function(){
+var j = schedule.scheduleJob('0 26 0 * * *', function(){
 //Datos del correo
 				var transporter = nodemailer.createTransport({
 			  service: 'gmail',
@@ -1684,40 +1684,6 @@ var j = schedule.scheduleJob('0 16 24 * * *', function(){
 });
 
 
-
-var uj = schedule.scheduleJob('0 30 24 * * *', function(){
-//Datos del correo
-				var transporter = nodemailer.createTransport({
-			  service: 'gmail',
-			  auth: {
-			    user: 'desarrollotecnologicoaraque@gmail.com',
-			    pass: '#pinky23'
-			  },
-			   tls: {
-			        rejectUnauthorized: false
-			    }
-			});
-//Opciones del correo
-			var mailOptions = {
-		  from: 'desarrollotecnologicoaraque@gmail.com',
-		  to: 'desarrollotecnologicoaraque@gmail.com',
-		  subject: 'DINERO DEL SERVIDOR DEL DIA',
-		   html: '<br/><b> '+"Recaudacion del servidor:  "+dineroServidor+' Bs'
-
-		};
-
-//Funcion que envia el correo y resetea la variable "dineroServidor"
-		transporter.sendMail(mailOptions, function(error, info){
-		  if (error) {
-		    console.log(error);
-		  } else {
-		    console.log('Email enviado! (dineroServidor reseteado a 0) ' + info.response);
-		    dineroServidor=0;
-		  }
-		});
-
-
-});
 
 
 
