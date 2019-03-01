@@ -11,7 +11,7 @@ var numDelSocketEnSala=-1;//Usado para controlar el numero que tiene un socket d
 var nombre=0; //REMPLAZAR POR ID BASE DATOS
 var arraySockets=[]; //Array que contendra los sockets
 var arrayNumeros=[]; //Array que contendra numeros
-var dineroEnJuego=1;
+var dineroEnJuego=100;
 var dineroServidor=0; //El valor de esta variable es enviado por correo y reseteado a las 3:00 AM diario
 
 
@@ -19,8 +19,7 @@ var server=net.createServer(function(socket){
 
 	
 //ESTO SE EJECUTARA CUANDO EL CLIENTE APENAS SE CONECTE AL SERVER////////////////////////////////////////////////////////////////////
-			
-
+			console.log("IN SALA1 ");
 			numDelSocketEnSala++;
 
 			//PROPIEDADES COMUNES QUE TENDRAN TODOS LOS SOCKETS
@@ -302,7 +301,7 @@ var server=net.createServer(function(socket){
 
 
 					//Mostrar el array con los numeros
-		    		console.log(arrayNumeros[socket.sala]);
+		    		//console.log(arrayNumeros[socket.sala]);
 
 											//¿QUIEN PERDIO?>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 											switch (arrayNumeros[socket.sala].nMenor){
@@ -412,10 +411,7 @@ var server=net.createServer(function(socket){
 													setTimeout(function(){
 														try {
 															arraySockets[socket.sala][0].write(arraySockets[socket.sala][0].dinero.toString());
-															console.log("El player 1 tiene actualmente:  "+arraySockets[socket.sala][0].dinero);
-															console.log("El player 2 tiene actualmente:  "+arraySockets[socket.sala][1].dinero);
-															console.log("El player 3 tiene actualmente:  "+arraySockets[socket.sala][2].dinero);
-															console.log("El player 4 tiene actualmente:  "+arraySockets[socket.sala][3].dinero);
+														
 
 														} catch(e) {
 															
@@ -427,7 +423,7 @@ var server=net.createServer(function(socket){
 
 
 
-													
+							
 													//Enviamos dinero del P2
 													setTimeout(function(){
 														try {
@@ -660,10 +656,7 @@ var server=net.createServer(function(socket){
 													setTimeout(function(){
 														try {
 															arraySockets[socket.sala][1].write(arraySockets[socket.sala][1].dinero.toString());
-															console.log("El player 2 tiene actualmente:  "+arraySockets[socket.sala][1].dinero);
-															console.log("El player 1 tiene actualmente:  "+arraySockets[socket.sala][0].dinero);
-															console.log("El player 3 tiene actualmente:  "+arraySockets[socket.sala][2].dinero);
-															console.log("El player 4 tiene actualmente:  "+arraySockets[socket.sala][3].dinero);
+															
 														} catch(e) {
 															// statements
 															console.log(e);
@@ -909,10 +902,7 @@ var server=net.createServer(function(socket){
 													setTimeout(function(){
 														try {
 															arraySockets[socket.sala][2].write(arraySockets[socket.sala][2].dinero.toString());
-															console.log("El player 1 tiene actualmente:  "+arraySockets[socket.sala][0].dinero);
-															console.log("El player 2 tiene actualmente:  "+arraySockets[socket.sala][1].dinero);
-															console.log("El player 3 tiene actualmente:  "+arraySockets[socket.sala][2].dinero);
-															console.log("El player 4 tiene actualmente:  "+arraySockets[socket.sala][3].dinero);
+															
 														} catch(e) {
 															// statements
 															console.log(e);
@@ -1155,10 +1145,7 @@ var server=net.createServer(function(socket){
 													setTimeout(function(){
 														try {
 															arraySockets[socket.sala][3].write(arraySockets[socket.sala][3].dinero.toString());
-															console.log("El player 1 tiene actualmente:  "+arraySockets[socket.sala][0].dinero);
-															console.log("El player 2 tiene actualmente:  "+arraySockets[socket.sala][1].dinero);
-															console.log("El player 3 tiene actualmente:  "+arraySockets[socket.sala][2].dinero);
-															console.log("El player 4 tiene actualmente:  "+arraySockets[socket.sala][3].dinero);
+															
 														} catch(e) {
 															// statements
 															console.log(e);
@@ -1381,6 +1368,7 @@ var server=net.createServer(function(socket){
 
 
 	socket.on('end',function(){
+		console.log("OUT SALA1 ");
 		//Lo sacamos del arraySockets
 		var index = arraySockets[socket.sala].indexOf(socket);
 		
@@ -1408,8 +1396,8 @@ var server=net.createServer(function(socket){
 
 			//Si un socket  esta en pleno juego , sale , pero ya recibio "closed" significa que esta saliendo CORRECTAMENTE
 			if(socket.recibidoClosed==true){
-				console.log("Legalmente ya puede salir pues recibio closed")
-				console.log("socket.dinero="+socket.dinero);
+				//console.log("Legalmente ya puede salir pues recibio closed")
+				//console.log("socket.dinero="+socket.dinero);
 
 			//Pero si un socket  esta en pleno juego , sale , y NO recibio "closed" significa que esta saliendo INCORRECTAMENTE
 			}else {			
@@ -1555,7 +1543,10 @@ function reparteDinero(dineroActual,porcentajePerdido,socket_perdedor,sala){
 
 function servidorSeQuedaCon(dineroActual,porcentaje){
 	dineroServidor=dineroServidor+ (dineroActual/100)*porcentaje;
+
+	
 	console.log("Dinero En Servidor=" +dineroServidor);
+	
 
 }
 
@@ -1621,13 +1612,14 @@ var numDelSocketEnSala=-1;//Usado para controlar el numero que tiene un socket d
 var nombre=0; //REMPLAZAR POR ID BASE DATOS
 var arraySockets=[]; //Array que contendra los sockets
 var arrayNumeros=[]; //Array que contendra numeros
-var dineroEnJuego=5;
+var dineroEnJuego=250;
 var dineroServidor=0; //El valor de esta variable es enviado por correo y reseteado a las 3:00 AM diario
 
 
 var server=net.createServer(function(socket){
 	
 //ESTO SE EJECUTARA CUANDO EL CLIENTE APENAS SE CONECTE AL SERVER////////////////////////////////////////////////////////////////////
+console.log("IN SALA2");	
 			
 			numDelSocketEnSala++;
 
@@ -2022,10 +2014,7 @@ var server=net.createServer(function(socket){
 													setTimeout(function(){
 														try {
 															arraySockets[socket.sala][0].write(arraySockets[socket.sala][0].dinero.toString());
-															console.log("El player 1 tiene actualmente:  "+arraySockets[socket.sala][0].dinero);
-															console.log("El player 2 tiene actualmente:  "+arraySockets[socket.sala][1].dinero);
-															console.log("El player 3 tiene actualmente:  "+arraySockets[socket.sala][2].dinero);
-															console.log("El player 4 tiene actualmente:  "+arraySockets[socket.sala][3].dinero);
+															
 															
 														} catch(e) {
 															// statements
@@ -2269,10 +2258,7 @@ var server=net.createServer(function(socket){
 													setTimeout(function(){
 														try {
 															arraySockets[socket.sala][1].write(arraySockets[socket.sala][1].dinero.toString());
-															console.log("El player 1 tiene actualmente:  "+arraySockets[socket.sala][0].dinero);
-															console.log("El player 2 tiene actualmente:  "+arraySockets[socket.sala][1].dinero);
-															console.log("El player 3 tiene actualmente:  "+arraySockets[socket.sala][2].dinero);
-															console.log("El player 4 tiene actualmente:  "+arraySockets[socket.sala][3].dinero);
+															
 														
 														} catch(e) {
 															// statements
@@ -2517,10 +2503,7 @@ var server=net.createServer(function(socket){
 													setTimeout(function(){
 														try {
 															arraySockets[socket.sala][2].write(arraySockets[socket.sala][2].dinero.toString());
-															console.log("El player 1 tiene actualmente:  "+arraySockets[socket.sala][0].dinero);
-															console.log("El player 2 tiene actualmente:  "+arraySockets[socket.sala][1].dinero);
-															console.log("El player 3 tiene actualmente:  "+arraySockets[socket.sala][2].dinero);
-															console.log("El player 4 tiene actualmente:  "+arraySockets[socket.sala][3].dinero);
+															
 															
 														} catch(e) {
 															// statements
@@ -2765,10 +2748,7 @@ var server=net.createServer(function(socket){
 													setTimeout(function(){
 														try {
 															arraySockets[socket.sala][3].write(arraySockets[socket.sala][3].dinero.toString());
-															console.log("El player 1 tiene actualmente:  "+arraySockets[socket.sala][0].dinero);
-															console.log("El player 2 tiene actualmente:  "+arraySockets[socket.sala][1].dinero);
-															console.log("El player 3 tiene actualmente:  "+arraySockets[socket.sala][2].dinero);
-															console.log("El player 4 tiene actualmente:  "+arraySockets[socket.sala][3].dinero);
+															
 														
 														} catch(e) {
 															// statements
@@ -2990,6 +2970,8 @@ var server=net.createServer(function(socket){
 
 
 	socket.on('end',function(){
+				console.log("OUT SALA2 ");
+
 		//Lo sacamos del arraySockets
 		var index = arraySockets[socket.sala].indexOf(socket);
 		
@@ -3231,7 +3213,7 @@ var numDelSocketEnSala=-1;//Usado para controlar el numero que tiene un socket d
 var nombre=0; //REMPLAZAR POR ID BASE DATOS
 var arraySockets=[]; //Array que contendra los sockets
 var arrayNumeros=[]; //Array que contendra numeros
-var dineroEnJuego=7;
+var dineroEnJuego=500;
 var dineroServidor=0; //El valor de esta variable es enviado por correo y reseteado a las 3:00 AM diario
 
 
@@ -3240,7 +3222,7 @@ var server=net.createServer(function(socket){
 //ESTO SE EJECUTARA CUANDO EL CLIENTE APENAS SE CONECTE AL SERVER////////////////////////////////////////////////////////////////////
 			
 
-
+console.log("IN SALA3");
 			numDelSocketEnSala++;
 			
 
@@ -3520,7 +3502,7 @@ var server=net.createServer(function(socket){
 
 
 					//Mostrar el array con los numeros
-		    		console.log(arrayNumeros[socket.sala]);
+		    		
 
 											//¿QUIEN PERDIO?>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 											switch (arrayNumeros[socket.sala].nMenor){
@@ -3629,10 +3611,7 @@ var server=net.createServer(function(socket){
 													setTimeout(function(){
 														try {
 															arraySockets[socket.sala][0].write(arraySockets[socket.sala][0].dinero.toString());
-															console.log("El player 1 tiene actualmente:  "+arraySockets[socket.sala][0].dinero);
-															console.log("El player 2 tiene actualmente:  "+arraySockets[socket.sala][1].dinero);
-															console.log("El player 3 tiene actualmente:  "+arraySockets[socket.sala][2].dinero);
-															console.log("El player 4 tiene actualmente:  "+arraySockets[socket.sala][3].dinero);
+															
 														
 														} catch(e) {
 															// statements
@@ -3876,10 +3855,7 @@ var server=net.createServer(function(socket){
 													setTimeout(function(){
 														try {
 															arraySockets[socket.sala][1].write(arraySockets[socket.sala][1].dinero.toString());
-															console.log("El player 1 tiene actualmente:  "+arraySockets[socket.sala][0].dinero);
-															console.log("El player 2 tiene actualmente:  "+arraySockets[socket.sala][1].dinero);
-															console.log("El player 3 tiene actualmente:  "+arraySockets[socket.sala][2].dinero);
-															console.log("El player 4 tiene actualmente:  "+arraySockets[socket.sala][3].dinero);
+															
 															
 														} catch(e) {
 															// statements
@@ -4124,10 +4100,7 @@ var server=net.createServer(function(socket){
 													setTimeout(function(){
 														try {
 															arraySockets[socket.sala][2].write(arraySockets[socket.sala][2].dinero.toString());
-															console.log("El player 1 tiene actualmente:  "+arraySockets[socket.sala][0].dinero);
-															console.log("El player 2 tiene actualmente:  "+arraySockets[socket.sala][1].dinero);
-															console.log("El player 3 tiene actualmente:  "+arraySockets[socket.sala][2].dinero);
-															console.log("El player 4 tiene actualmente:  "+arraySockets[socket.sala][3].dinero);
+															
 
 														} catch(e) {
 															// statements
@@ -4370,10 +4343,7 @@ var server=net.createServer(function(socket){
 													setTimeout(function(){
 														try {
 															arraySockets[socket.sala][3].write(arraySockets[socket.sala][3].dinero.toString());
-															console.log("El player 1 tiene actualmente:  "+arraySockets[socket.sala][0].dinero);
-															console.log("El player 2 tiene actualmente:  "+arraySockets[socket.sala][1].dinero);
-															console.log("El player 3 tiene actualmente:  "+arraySockets[socket.sala][2].dinero);
-															console.log("El player 4 tiene actualmente:  "+arraySockets[socket.sala][3].dinero);
+															
 															
 														} catch(e) {
 															// statements
@@ -4595,6 +4565,9 @@ var server=net.createServer(function(socket){
 
 
 	socket.on('end',function(){
+
+			console.log("OUT SALA3 ");
+
 		//Lo sacamos del arraySockets
 		var index = arraySockets[socket.sala].indexOf(socket);
 		
@@ -4836,14 +4809,14 @@ var numDelSocketEnSala=-1;//Usado para controlar el numero que tiene un socket d
 var nombre=0; //REMPLAZAR POR ID BASE DATOS
 var arraySockets=[]; //Array que contendra los sockets
 var arrayNumeros=[]; //Array que contendra numeros
-var dineroEnJuego=15;
+var dineroEnJuego=3000;
 var dineroServidor=0; //El valor de esta variable es enviado por correo y reseteado a las 3:00 AM diario
 
 
 var server=net.createServer(function(socket){
 	
 //ESTO SE EJECUTARA CUANDO EL CLIENTE APENAS SE CONECTE AL SERVER////////////////////////////////////////////////////////////////////
-			
+			console.log("IN SALA4");
 
 		
 			numDelSocketEnSala++;
@@ -5230,10 +5203,7 @@ var server=net.createServer(function(socket){
 													setTimeout(function(){
 														try {
 															arraySockets[socket.sala][0].write(arraySockets[socket.sala][0].dinero.toString());
-															console.log("El player 1 tiene actualmente:  "+arraySockets[socket.sala][0].dinero);
-															console.log("El player 2 tiene actualmente:  "+arraySockets[socket.sala][1].dinero);
-															console.log("El player 3 tiene actualmente:  "+arraySockets[socket.sala][2].dinero);
-															console.log("El player 4 tiene actualmente:  "+arraySockets[socket.sala][3].dinero);
+															
 														} catch(e) {
 															// statements
 															console.log(e);
@@ -5419,10 +5389,7 @@ var server=net.createServer(function(socket){
 													setTimeout(function(){
 														try {
 															arraySockets[socket.sala][1].write(arraySockets[socket.sala][1].dinero.toString());
-															console.log("El player 1 tiene actualmente:  "+arraySockets[socket.sala][0].dinero);
-															console.log("El player 2 tiene actualmente:  "+arraySockets[socket.sala][1].dinero);
-															console.log("El player 3 tiene actualmente:  "+arraySockets[socket.sala][2].dinero);
-															console.log("El player 4 tiene actualmente:  "+arraySockets[socket.sala][3].dinero);
+															
 														} catch(e) {
 															// statements
 															console.log(e);
@@ -5608,10 +5575,7 @@ var server=net.createServer(function(socket){
 													setTimeout(function(){
 														try {
 															arraySockets[socket.sala][2].write(arraySockets[socket.sala][2].dinero.toString());
-															console.log("El player 1 tiene actualmente:  "+arraySockets[socket.sala][0].dinero);
-															console.log("El player 2 tiene actualmente:  "+arraySockets[socket.sala][1].dinero);
-															console.log("El player 3 tiene actualmente:  "+arraySockets[socket.sala][2].dinero);
-															console.log("El player 4 tiene actualmente:  "+arraySockets[socket.sala][3].dinero);
+															
 														} catch(e) {
 															// statements
 															console.log(e);
@@ -5795,10 +5759,7 @@ var server=net.createServer(function(socket){
 													setTimeout(function(){
 														try {
 															arraySockets[socket.sala][3].write(arraySockets[socket.sala][3].dinero.toString());
-															console.log("El player 1 tiene actualmente:  "+arraySockets[socket.sala][0].dinero);
-															console.log("El player 2 tiene actualmente:  "+arraySockets[socket.sala][1].dinero);
-															console.log("El player 3 tiene actualmente:  "+arraySockets[socket.sala][2].dinero);
-															console.log("El player 4 tiene actualmente:  "+arraySockets[socket.sala][3].dinero);
+															
 														} catch(e) {
 															// statements
 															console.log(e);
@@ -5965,6 +5926,8 @@ var server=net.createServer(function(socket){
 
 
 	socket.on('end',function(){
+				console.log("OUT SALA4 ");
+
 		//Lo sacamos del arraySockets
 		var index = arraySockets[socket.sala].indexOf(socket);
 		
@@ -5992,8 +5955,7 @@ var server=net.createServer(function(socket){
 
 			//Si un socket  esta en pleno juego , sale , pero ya recibio "closed" significa que esta saliendo CORRECTAMENTE
 			if(socket.recibidoClosed==true){
-				console.log("Legalmente ya puede salir pues recibio closed")
-				console.log("socket.dinero="+socket.dinero);
+				
 
 			//Pero si un socket  esta en pleno juego , sale , y NO recibio "closed" significa que esta saliendo INCORRECTAMENTE
 			}else {			
