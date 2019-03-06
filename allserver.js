@@ -14,12 +14,11 @@ var arrayNumeros=[]; //Array que contendra numeros
 var dineroEnJuego=100;
 var dineroServidor=0; //El valor de esta variable es enviado por correo y reseteado a las 3:00 AM diario
 
-
 var server=net.createServer(function(socket){
 
 	
 //ESTO SE EJECUTARA CUANDO EL CLIENTE APENAS SE CONECTE AL SERVER////////////////////////////////////////////////////////////////////
-			console.log("IN SALA1 ");
+			
 			numDelSocketEnSala++;
 
 			//PROPIEDADES COMUNES QUE TENDRAN TODOS LOS SOCKETS
@@ -29,6 +28,9 @@ var server=net.createServer(function(socket){
 			socket.enJuego=false; //****** ¿El socket se encutra en pleno juego?
 			socket.recibidoClosed=false;
 			socket.ronda=0;//***** En que ronda se encuentra el socket
+			socket.conectado=false;
+			socket.yaSalio=false;
+
 
 		
 
@@ -40,6 +42,7 @@ var server=net.createServer(function(socket){
 				arraySockets[socket.sala]=new Array();
 				arraySockets[socket.sala].push(socket);
 				arraySockets[socket.sala][0].write("0");
+				console.log("IN SALA1"+"-"+ socket.sala);
 
 			//SI YA HA SIDO CREADA:
 			}else{
@@ -51,6 +54,7 @@ var server=net.createServer(function(socket){
 		   			arraySockets[socket.sala].splice(index, 1,socket);
 					arraySockets[socket.sala][0].write("0");
 					socket.numEnSala=0;
+					console.log("IN SALA1"+"-"+ socket.sala);
 					
 
 					}else if(arraySockets[socket.sala][1]=="NULO"){
@@ -59,6 +63,7 @@ var server=net.createServer(function(socket){
 			   			arraySockets[socket.sala].splice(index, 1,socket);
 						arraySockets[socket.sala][1].write("1");
 						socket.numEnSala=1;
+						console.log("IN SALA1"+"-"+ socket.sala);
 						
 
 						
@@ -69,6 +74,7 @@ var server=net.createServer(function(socket){
 				   			arraySockets[socket.sala].splice(index, 1,socket);
 							arraySockets[socket.sala][2].write("2");
 							socket.numEnSala=2;
+							console.log("IN SALA1"+"-"+ socket.sala);
 							
 
 						
@@ -78,6 +84,7 @@ var server=net.createServer(function(socket){
 							//PASAMOS AL SOCKET EL NUMERO QUE LE CORRESPONDERA EN LA SALA
 							var numEnSalaString=socket.numEnSala.toString();
 							socket.write(numEnSalaString);
+							console.log("IN SALA1"+"-"+ socket.sala);
 
 							}
 			
@@ -106,6 +113,16 @@ var server=net.createServer(function(socket){
 								//Al primer socket de la sala le enviamos "TURNO"
 								try {
 									arraySockets[socket.sala][0].write("TURNO");
+
+									arraySockets[socket.sala][0].setTimeout(16000,function(){
+							        	console.log("socket 1 timeOut");
+							        	if(arraySockets[socket.sala][0].yaSalio==false && arraySockets[socket.sala][0].enJuego==true){							      
+							        		arraySockets[socket.sala][0].emit('end');
+							        	}else{
+							        		console.log("Socket ya habia slaido")
+							        	}							        	
+							        	
+							        });
 							        
 
 									
@@ -123,6 +140,33 @@ var server=net.createServer(function(socket){
 //CUANDO EL CLIENTE ENVIA DATA////////////////////////////////////////////////////////////////////////////////////////////////////////
 	socket.setEncoding('utf8');
 	socket.on('data',function(data){
+
+
+		if(socket.enJuego==false && data=="ping"){
+			socket.conectado=true;
+
+				setTimeout(function(){
+					if(socket.enJuego==false){
+						socket.write("pong");
+						socket.conectado=false;
+					}
+
+				},3000);
+
+				setTimeout(function(){
+					if(socket.conectado==false){
+						if(socket.yaSalio==true){
+						}else{
+							if(socket.enJuego==false){
+							socket.emit('end');
+							}
+						}
+					}
+
+				},6000);
+
+
+		}else if(data != "ping" && isNaN(data)==false){
 
 	
 		//Retransmitimos el numero recibido a todos los demas sockets	
@@ -260,10 +304,98 @@ var server=net.createServer(function(socket){
 				var posicionActualSocketMas1= socket.numEnSala+1;
 
 				try {
-					
+					//Eliminamos tiempo de espera de 15 segundos para perder al socket 1
+					arraySockets[socket.sala][0].setTimeout(0);
 
+					
+					if(arraySockets[socket.sala][0].turno==true){
+						clearTimeout(arraySockets[socket.sala][0].funcionTimeOut);
+						console.log("SE CANCELA TIMEOUT JUGADOR1")
+						arraySockets[socket.sala][0].turno=false;
+						arraySockets[socket.sala][3].turno=false;
+					
+					}
+					
+					
 					//Enviamos TURNO al siguiente socket
 					arraySockets[socket.sala][posicionActualSocketMas1].write("TURNO");
+					console.log("se envio turno a: "+posicionActualSocketMas1);
+					//La propiedad .turno del siguiete socket se vuelve true
+					arraySockets[socket.sala][posicionActualSocketMas1].turno=true;
+					arraySockets[socket.sala][socket.numEnSala].turno=false;
+					
+					console.log("jugador1-Turno: "+arraySockets[socket.sala][0].turno);
+					console.log("jugador2-Turno: "+arraySockets[socket.sala][1].turno);
+					console.log("jugador3-Turno: "+arraySockets[socket.sala][2].turno);
+					console.log("jugador4-Turno: "+arraySockets[socket.sala][3].turno);
+
+
+					//Si es el turno del 2do socket tendra 15 segundos para enviar algun numero
+					if(arraySockets[socket.sala][1].turno==true){
+						
+					 console.log("COMIENZA A CONTAR TIEMPO PARA JUGADOR 2")
+
+						arraySockets[socket.sala][1].funcionTimeOut= setTimeout(function(){
+
+
+							if(arraySockets[socket.sala][1].turno==true){
+								console.log("JUGADOR 2 ERA SU TURNO Y NO HIZO NADA, TIMEOUT");
+								if(arraySockets[socket.sala][1].yaSalio==false && arraySockets[socket.sala][1].enJuego==true){							      
+								    arraySockets[socket.sala][1].emit('end');
+								}
+							}
+					
+						},16000);
+
+					
+						
+
+					}else if(arraySockets[socket.sala][2].turno==true){
+					
+						console.log("SE CANCELA TIMEOUT JUGADOR 2")
+						clearTimeout(arraySockets[socket.sala][1].funcionTimeOut);
+
+						console.log("COMIENZA A CONTAR TIEMPO PARA JUGADOR 3")
+					  
+					  arraySockets[socket.sala][2].funcionTimeOut=  setTimeout(function(){
+
+							if(arraySockets[socket.sala][2].turno==true){
+								console.log("JUGADOR 3 ERA SU TURNO Y NO HIZO NADA, TIMEOUT");
+								if(arraySockets[socket.sala][2].yaSalio==false && arraySockets[socket.sala][2].enJuego==true){							      
+								    arraySockets[socket.sala][2].emit('end');
+								}
+							}
+					
+						},16000);
+						
+
+					}else if(arraySockets[socket.sala][3].turno==true){
+						console.log("SE CANCELA TIMEOUT JUGADOR 3")
+						clearTimeout(arraySockets[socket.sala][2].funcionTimeOut);
+
+						console.log("COMIENZA A CONTAR TIEMPO PARA JUGADOR 4")
+					  arraySockets[socket.sala][3].funcionTimeOut=setTimeout(function(){
+					  	try {
+					  		if(arraySockets[socket.sala][3].turno==true){
+								console.log("JUGADOR 4 ERA SU TURNO Y NO HIZO NADA, TIMEOUT");
+								if(arraySockets[socket.sala][3].yaSalio==false && arraySockets[socket.sala][3].enJuego==true){							      
+								    arraySockets[socket.sala][3].emit('end');
+								}
+							}
+					  		
+					  	} catch(e) {
+					  		// statements
+					  		console.log(e);
+					  	}
+
+							
+					
+						},16000);
+						
+
+
+					}
+					
 					
 		
 
@@ -278,7 +410,10 @@ var server=net.createServer(function(socket){
 //>4	//Pero si es el 4to socket de la sala entonces:	
 		//AQUI ES DONDE SE EJECUTAN LOS CALCULOS: QUIEN PIERDE; CUANTO PIERDE; SE REDISTRIBUYE EL DINERO.....!!!!!!!!!!!!!!!!
 		}else if(socket.numEnSala==3){
-			//Guardamos en n4 lo recibido del socket 4
+			arraySockets[socket.sala][3].turno=false;
+			clearTimeout(arraySockets[socket.sala][3].funcionTimeOut);
+			console.log("Cancalado timeout jugador 4")
+						//Guardamos en n4 lo recibido del socket 4
 			switch (data) {
 					case "10":
 					arrayNumeros[socket.sala].n4=10;
@@ -1314,7 +1449,12 @@ var server=net.createServer(function(socket){
 			//Aumentamos el numero de cada Ronda
 			arraySockets[socket.sala].forEach(function(elemento){							
 				elemento.ronda=elemento.ronda+1;
+
+
 			});	
+
+
+
 
 
 			//Si es el final de la 4ta ronda cerramos la sala con el cierre del cliente
@@ -1340,6 +1480,21 @@ var server=net.createServer(function(socket){
 			setTimeout(function(){
 				try {
 				 arraySockets[socket.sala][0].write("TURNO");
+				 arraySockets[socket.sala][0].turno=true;
+
+				   
+					console.log("COMIENZA A CONTAR TIEMPO PARA JUGADOR 1")
+					arraySockets[socket.sala][0].funcionTimeOut=setTimeout(function(){
+					console.log("socket 1 timeOut");
+
+						if(arraySockets[socket.sala][0].turno==true){
+							if(arraySockets[socket.sala][0].yaSalio==false && arraySockets[socket.sala][0].enJuego==true){							      
+							    arraySockets[socket.sala][0].emit('end');
+							}
+						}
+				
+					},16000);
+				 				
 
 				} catch(e) {
 					console.log("Error en la linea 479: No se pudo enviar TURNO al primer socket ")
@@ -1352,7 +1507,7 @@ var server=net.createServer(function(socket){
 		}
 
 
-			
+		}
 		
 	});
 
@@ -1365,113 +1520,120 @@ var server=net.createServer(function(socket){
 
 
 //CUANDO EL CLIENTE SALE/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////	
+		
 
 
 	socket.on('end',function(){
-		console.log("OUT SALA1 ");
-		//Lo sacamos del arraySockets
-		var index = arraySockets[socket.sala].indexOf(socket);
-		
-		//Si la longitud del array es de 3 o menos: Insertamos NULO en el elemento que sale
-		if(arraySockets[socket.sala].length <= 3){
-			
-		  //elimina 1 elemento desde el índice "index", e inserta 'nulo'
-		   arraySockets[socket.sala].splice(index, 1,"NULO");
-
-		
+		console.log("OUT SALA1"+"-"+ socket.sala);
+		if(socket.yaSalio==false){
+			socket.yaSalio=true;
 			
 
-		}else{
-			//elimina 1 elemento desde el índice "index"
-		   arraySockets[socket.sala].splice(index, 1);
-		}
+			//Lo sacamos del arraySockets
+			var index = arraySockets[socket.sala].indexOf(socket);
+			
+			//Si la longitud del array es de 3 o menos: Insertamos NULO en el elemento que sale
+			if(arraySockets[socket.sala].length <= 3){
+				
+			  //elimina 1 elemento desde el índice "index", e inserta 'nulo'
+			   arraySockets[socket.sala].splice(index, 1,"NULO");
+
+			
+				
+
+			}else{
+				//elimina 1 elemento desde el índice "index"
+			   arraySockets[socket.sala].splice(index, 1);
+			}
+			
+
+
+
+			//Si el socket que salio  estaba en pleno juego :			
+			if(socket.enJuego==true){
+				
+				socket.enJuego=false;
+
+				//Si un socket  esta en pleno juego , sale , pero ya recibio "closed" significa que esta saliendo CORRECTAMENTE
+				if(socket.recibidoClosed==true){
+					//console.log("Legalmente ya puede salir pues recibio closed")
+					//console.log("socket.dinero="+socket.dinero);
+
+				//Pero si un socket  esta en pleno juego , sale , y NO recibio "closed" significa que esta saliendo INCORRECTAMENTE
+				}else {			
+					
+					console.log("Se salio un cliente sin haber recibido 'closed' ")
+					console.log("socket.dinero del que salio= "+socket.dinero);
+					
+					partida_numero++;
+					console.log("Terminada partida_numero: "+partida_numero);
+					
+					//SOCKET QUE SALIO PIERDE TODO EL DINERO EN JUEGO: 70% > OTROS JUGADORES, 30% > SERVER
+					//servidorSeQuedaCon(dineroActualDelPerdedor,porcentaje)
+					servidorSeQuedaCon(socket.dinero,30);
+					// reparteDinero(dineroActualDelPerdedor,porcentajePerdida,socket_perdedor,sala) 
+						reparteDinero(socket.dinero , 70,
+								socket, socket.sala);
+					
 		
 
 
+					//Enviamos "closed" a cada socket de la sala en la que se salio incorrectamente un socket  y enviamos tambien dinero actualizado
+					arraySockets[socket.sala].forEach(function(elemento){
 
-		//Si el socket que salio  estaba en pleno juego :			
-		if(socket.enJuego==true){
-			
-			socket.enJuego=false;
-
-			//Si un socket  esta en pleno juego , sale , pero ya recibio "closed" significa que esta saliendo CORRECTAMENTE
-			if(socket.recibidoClosed==true){
-				//console.log("Legalmente ya puede salir pues recibio closed")
-				//console.log("socket.dinero="+socket.dinero);
-
-			//Pero si un socket  esta en pleno juego , sale , y NO recibio "closed" significa que esta saliendo INCORRECTAMENTE
-			}else {			
-				
-				console.log("Se salio un cliente sin haber recibido 'closed' ")
-				console.log("socket.dinero del que salio= "+socket.dinero);
-				
-				partida_numero++;
-				console.log("Terminada partida_numero: "+partida_numero);
-				
-				//SOCKET QUE SALIO PIERDE TODO EL DINERO EN JUEGO: 70% > OTROS JUGADORES, 30% > SERVER
-				//servidorSeQuedaCon(dineroActualDelPerdedor,porcentaje)
-				servidorSeQuedaCon(socket.dinero,30);
-				// reparteDinero(dineroActualDelPerdedor,porcentajePerdida,socket_perdedor,sala) 
-					reparteDinero(socket.dinero , 70,
-							socket, socket.sala);
-				
-	
-
-
-				//Enviamos "closed" a cada socket de la sala en la que se salio incorrectamente un socket  y enviamos tambien dinero actualizado
-				arraySockets[socket.sala].forEach(function(elemento){
-
-					//Para no enviar nada al mismo que esta saliendo
- 					if(socket === elemento) return;
- 					
- 					//Enviamos su dinero actualizado a cada socket
-					try {
+						//Para no enviar nada al mismo que esta saliendo
+	 					if(socket === elemento) return;
+	 					
+	 					//Enviamos su dinero actualizado a cada socket
+						try {
+							
+							elemento.write("WIN");
+							setTimeout(function(){
+												   
+								elemento.write(elemento.dinero.toFixed(2));
+							},1000);
+						} catch(e) {
+							
+							console.log(e);
+						}
 						
-						elemento.write("WIN");
+
+					
+
 						setTimeout(function(){
-											   
-							elemento.write(elemento.dinero.toFixed(2));
-						},1000);
-					} catch(e) {
 						
-						console.log(e);
-					}
-					
 
-				
-
-					setTimeout(function(){
-					
-
-					//Le enviamos closed al cliente android 
-					try {
-					elemento.write("closed");
-					} catch(e) {
-						
-						console.log(e);
-					}
-					//Recibido closed? true en servidor
-					elemento.recibidoClosed=true;
+						//Le enviamos closed al cliente android 
+						try {
+						elemento.write("closed");
+						} catch(e) {
+							
+							console.log(e);
+						}
+						//Recibido closed? true en servidor
+						elemento.recibidoClosed=true;
 
 
-					},2500);
+						},2500);
 
 
 
-				});
-	
+					});
+		
+				}
+
+			
+			   
+			}else{
+			//Si el socket que salio NO estaba en pleno	juego
+			  numDelSocketEnSala--;
 			}
 
 		
-		   
+		
 		}else{
-		//Si el socket que salio NO estaba en pleno	juego
-		  numDelSocketEnSala--;
+			console.log("SE EMITIO SALIR PERO ESTE SOCKET YA HABIA SALIDO :S")
 		}
-
-		
-		
-
 
 		
 		
@@ -1619,7 +1781,7 @@ var dineroServidor=0; //El valor de esta variable es enviado por correo y resete
 var server=net.createServer(function(socket){
 	
 //ESTO SE EJECUTARA CUANDO EL CLIENTE APENAS SE CONECTE AL SERVER////////////////////////////////////////////////////////////////////
-console.log("IN SALA2");	
+
 			
 			numDelSocketEnSala++;
 
@@ -1630,6 +1792,8 @@ console.log("IN SALA2");
 			socket.enJuego=false; //****** ¿El socket se encutra en pleno juego?
 			socket.recibidoClosed=false;
 			socket.ronda=0;//***** En que ronda se encuentra el socket
+			socket.conectado=false;
+			socket.yaSalio=false;
 
 		
 
@@ -1641,6 +1805,7 @@ console.log("IN SALA2");
 				arraySockets[socket.sala]=new Array();
 				arraySockets[socket.sala].push(socket);
 				arraySockets[socket.sala][0].write("0");
+				console.log("IN SALA2"+"-"+ socket.sala);
 
 			//SI YA HA SIDO CREADA:
 			}else{
@@ -1652,6 +1817,8 @@ console.log("IN SALA2");
 		   			arraySockets[socket.sala].splice(index, 1,socket);
 					arraySockets[socket.sala][0].write("0");
 					socket.numEnSala=0;
+					console.log("IN SALA2"+"-"+ socket.sala);
+
 					
 
 					}else if(arraySockets[socket.sala][1]=="NULO"){
@@ -1660,6 +1827,8 @@ console.log("IN SALA2");
 			   			arraySockets[socket.sala].splice(index, 1,socket);
 						arraySockets[socket.sala][1].write("1");
 						socket.numEnSala=1;
+						console.log("IN SALA2"+"-"+ socket.sala);
+
 						
 
 						
@@ -1670,7 +1839,8 @@ console.log("IN SALA2");
 				   			arraySockets[socket.sala].splice(index, 1,socket);
 							arraySockets[socket.sala][2].write("2");
 							socket.numEnSala=2;
-							
+							console.log("IN SALA2"+"-"+ socket.sala);
+	
 
 						
 
@@ -1680,6 +1850,8 @@ console.log("IN SALA2");
 							//PASAMOS AL SOCKET EL NUMERO QUE LE CORRESPONDERA EN LA SALA
 							var numEnSalaString=socket.numEnSala.toString();
 							socket.write(numEnSalaString);
+							console.log("IN SALA2"+"-"+ socket.sala);
+
 
 							}
 			
@@ -1708,6 +1880,15 @@ console.log("IN SALA2");
 								//Al primer socket de la sala le enviamos "TURNO"
 								try {
 									arraySockets[socket.sala][0].write("TURNO");
+
+									arraySockets[socket.sala][0].setTimeout(16000,function(){
+							        	console.log("socket 1 timeOut");
+							        	if(arraySockets[socket.sala][0].yaSalio==false && arraySockets[socket.sala][0].enJuego==true){							      
+							        		arraySockets[socket.sala][0].emit('end');
+							        	}							        	
+							        	
+							        });
+							        
 							       
 									
 								} catch(e) {
@@ -1724,6 +1905,33 @@ console.log("IN SALA2");
 //CUANDO EL CLIENTE ENVIA DATA////////////////////////////////////////////////////////////////////////////////////////////////////////
 	socket.setEncoding('utf8');
 	socket.on('data',function(data){
+
+
+		if(socket.enJuego==false && data=="ping"){
+			socket.conectado=true;
+
+				setTimeout(function(){
+					if(socket.enJuego==false){
+						socket.write("pong");
+						socket.conectado=false;
+					}
+
+				},3000);
+
+				setTimeout(function(){
+					if(socket.conectado==false){
+						if(socket.yaSalio==true){
+						}else{
+							if(socket.enJuego==false){
+							socket.emit('end');
+							}
+						}
+					}
+
+				},6000);
+
+
+		}else if(data != "ping" && isNaN(data)==false){
 
 	
 		//Retransmitimos el numero recibido a todos los demas sockets	
@@ -1865,9 +2073,98 @@ console.log("IN SALA2");
 				try {
 					
 
+					//Eliminamos tiempo de espera de 15 segundos para perder al socket 1
+					arraySockets[socket.sala][0].setTimeout(0);
+
+					
+					if(arraySockets[socket.sala][0].turno==true){
+						clearTimeout(arraySockets[socket.sala][0].funcionTimeOut);
+						console.log("SE CANCELA TIMEOUT JUGADOR1")
+						arraySockets[socket.sala][0].turno=false;
+						arraySockets[socket.sala][3].turno=false;
+					
+					}
+					
+					
 					//Enviamos TURNO al siguiente socket
 					arraySockets[socket.sala][posicionActualSocketMas1].write("TURNO");
-				
+					console.log("se envio turno a: "+posicionActualSocketMas1);
+					//La propiedad .turno del siguiete socket se vuelve true
+					arraySockets[socket.sala][posicionActualSocketMas1].turno=true;
+					arraySockets[socket.sala][socket.numEnSala].turno=false;
+					
+					console.log("jugador1-Turno: "+arraySockets[socket.sala][0].turno);
+					console.log("jugador2-Turno: "+arraySockets[socket.sala][1].turno);
+					console.log("jugador3-Turno: "+arraySockets[socket.sala][2].turno);
+					console.log("jugador4-Turno: "+arraySockets[socket.sala][3].turno);
+
+
+					//Si es el turno del 2do socket tendra 15 segundos para enviar algun numero
+					if(arraySockets[socket.sala][1].turno==true){
+						
+					 console.log("COMIENZA A CONTAR TIEMPO PARA JUGADOR 2")
+
+						arraySockets[socket.sala][1].funcionTimeOut= setTimeout(function(){
+
+
+							if(arraySockets[socket.sala][1].turno==true){
+								console.log("JUGADOR 2 ERA SU TURNO Y NO HIZO NADA, TIMEOUT");
+								if(arraySockets[socket.sala][1].yaSalio==false && arraySockets[socket.sala][1].enJuego==true){							      
+								    arraySockets[socket.sala][1].emit('end');
+								}
+							}
+					
+						},16000);
+
+					
+						
+
+					}else if(arraySockets[socket.sala][2].turno==true){
+					
+						console.log("SE CANCELA TIMEOUT JUGADOR 2")
+						clearTimeout(arraySockets[socket.sala][1].funcionTimeOut);
+
+						console.log("COMIENZA A CONTAR TIEMPO PARA JUGADOR 3")
+					  
+					  arraySockets[socket.sala][2].funcionTimeOut=  setTimeout(function(){
+
+							if(arraySockets[socket.sala][2].turno==true){
+								console.log("JUGADOR 3 ERA SU TURNO Y NO HIZO NADA, TIMEOUT");
+								if(arraySockets[socket.sala][2].yaSalio==false && arraySockets[socket.sala][2].enJuego==true){							      
+								    arraySockets[socket.sala][2].emit('end');
+								}
+							}
+					
+						},16000);
+						
+
+					}else if(arraySockets[socket.sala][3].turno==true){
+						console.log("SE CANCELA TIMEOUT JUGADOR 3")
+						clearTimeout(arraySockets[socket.sala][2].funcionTimeOut);
+
+						console.log("COMIENZA A CONTAR TIEMPO PARA JUGADOR 4")
+					 arraySockets[socket.sala][3].funcionTimeOut=setTimeout(function(){
+					  	try {
+					  		if(arraySockets[socket.sala][3].turno==true){
+								console.log("JUGADOR 4 ERA SU TURNO Y NO HIZO NADA, TIMEOUT");
+								if(arraySockets[socket.sala][3].yaSalio==false && arraySockets[socket.sala][3].enJuego==true){							      
+								    arraySockets[socket.sala][3].emit('end');
+								}
+							}
+					  		
+					  	} catch(e) {
+					  		// statements
+					  		console.log(e);
+					  	}
+
+							
+					
+						},16000);
+						
+
+
+					}
+					
 					
 				
 
@@ -1882,6 +2179,9 @@ console.log("IN SALA2");
 //>4	//Pero si es el 4to socket de la sala entonces:	
 		//AQUI ES DONDE SE EJECUTAN LOS CALCULOS: QUIEN PIERDE; CUANTO PIERDE; SE REDISTRIBUYE EL DINERO.....!!!!!!!!!!!!!!!!
 		}else if(socket.numEnSala==3){
+			arraySockets[socket.sala][3].turno=false;
+			clearTimeout(arraySockets[socket.sala][3].funcionTimeOut);
+			console.log("Cancalado timeout jugador 4");
 			//Guardamos en n4 lo recibido del socket 4
 			switch (data) {
 					case "10":
@@ -2942,6 +3242,21 @@ console.log("IN SALA2");
 			setTimeout(function(){
 				try {
 				 arraySockets[socket.sala][0].write("TURNO");
+				 arraySockets[socket.sala][0].turno=true;
+
+				   
+					console.log("COMIENZA A CONTAR TIEMPO PARA JUGADOR 1")
+					arraySockets[socket.sala][0].funcionTimeOut=setTimeout(function(){
+					console.log("socket 1 timeOut");
+
+						if(arraySockets[socket.sala][0].turno==true){
+							if(arraySockets[socket.sala][0].yaSalio==false && arraySockets[socket.sala][0].enJuego==true){							      
+							    arraySockets[socket.sala][0].emit('end');
+							}
+						}
+				
+					},16000);
+				 				
 
 				} catch(e) {
 					console.log("Error en la linea 479: No se pudo enviar TURNO al primer socket ")
@@ -2954,7 +3269,7 @@ console.log("IN SALA2");
 		}
 
 
-			
+			}
 		
 	});
 
@@ -2970,107 +3285,118 @@ console.log("IN SALA2");
 
 
 	socket.on('end',function(){
-				console.log("OUT SALA2 ");
-
-		//Lo sacamos del arraySockets
-		var index = arraySockets[socket.sala].indexOf(socket);
-		
-		//Si la longitud del array es de 3 o menos: Insertamos NULO en el elemento que sale
-		if(arraySockets[socket.sala].length <= 3){
-			
-		  //elimina 1 elemento desde el índice "index", e inserta 'nulo'
-		   arraySockets[socket.sala].splice(index, 1,"NULO");
-
-		
+		console.log("OUT SALA2"+"-"+ socket.sala);
+		if(socket.yaSalio==false){
+			socket.yaSalio=true;
 			
 
-		}else{
-			//elimina 1 elemento desde el índice "index"
-		   arraySockets[socket.sala].splice(index, 1);
-		}
+			//Lo sacamos del arraySockets
+			var index = arraySockets[socket.sala].indexOf(socket);
+			
+			//Si la longitud del array es de 3 o menos: Insertamos NULO en el elemento que sale
+			if(arraySockets[socket.sala].length <= 3){
+				
+			  //elimina 1 elemento desde el índice "index", e inserta 'nulo'
+			   arraySockets[socket.sala].splice(index, 1,"NULO");
+
+			
+				
+
+			}else{
+				//elimina 1 elemento desde el índice "index"
+			   arraySockets[socket.sala].splice(index, 1);
+			}
+			
+
+
+
+			//Si el socket que salio  estaba en pleno juego :			
+			if(socket.enJuego==true){
+				
+				socket.enJuego=false;
+
+				//Si un socket  esta en pleno juego , sale , pero ya recibio "closed" significa que esta saliendo CORRECTAMENTE
+				if(socket.recibidoClosed==true){
+					//console.log("Legalmente ya puede salir pues recibio closed")
+					//console.log("socket.dinero="+socket.dinero);
+
+				//Pero si un socket  esta en pleno juego , sale , y NO recibio "closed" significa que esta saliendo INCORRECTAMENTE
+				}else {			
+					
+					console.log("Se salio un cliente sin haber recibido 'closed' ")
+					console.log("socket.dinero del que salio= "+socket.dinero);
+					
+					partida_numero++;
+					console.log("Terminada partida_numero: "+partida_numero);
+					
+					//SOCKET QUE SALIO PIERDE TODO EL DINERO EN JUEGO: 70% > OTROS JUGADORES, 30% > SERVER
+					//servidorSeQuedaCon(dineroActualDelPerdedor,porcentaje)
+					servidorSeQuedaCon(socket.dinero,30);
+					// reparteDinero(dineroActualDelPerdedor,porcentajePerdida,socket_perdedor,sala) 
+						reparteDinero(socket.dinero , 70,
+								socket, socket.sala);
+					
 		
 
 
+					//Enviamos "closed" a cada socket de la sala en la que se salio incorrectamente un socket  y enviamos tambien dinero actualizado
+					arraySockets[socket.sala].forEach(function(elemento){
 
-		//Si el socket que salio  estaba en pleno juego :			
-		if(socket.enJuego==true){
-			
-			socket.enJuego=false;
-
-			//Si un socket  esta en pleno juego , sale , pero ya recibio "closed" significa que esta saliendo CORRECTAMENTE
-			if(socket.recibidoClosed==true){
-				
-
-			//Pero si un socket  esta en pleno juego , sale , y NO recibio "closed" significa que esta saliendo INCORRECTAMENTE
-			}else {			
-				
-				console.log("Se salio un cliente sin haber recibido 'closed' ")
-				console.log("socket.dinero del que salio= "+socket.dinero);
-
-				partida_numero++;
-				console.log("Terminada partida_numero: "+partida_numero);
-
-				//SOCKET QUE SALIO PIERDE TODO EL DINERO EN JUEGO: 70% > OTROS JUGADORES, 30% > SERVER
-				//servidorSeQuedaCon(dineroActualDelPerdedor,porcentaje)
-				servidorSeQuedaCon(socket.dinero,30);
-				// reparteDinero(dineroActualDelPerdedor,porcentajePerdida,socket_perdedor,sala) 
-					reparteDinero(socket.dinero , 70,
-							socket, socket.sala);
-				
-	
-
-
-				//Enviamos "closed" a cada socket de la sala en la que se salio incorrectamente un socket  y enviamos tambien dinero actualizado
-				arraySockets[socket.sala].forEach(function(elemento){
-
-					//Para no enviar nada al mismo que esta saliendo
- 					if(socket === elemento) return;
- 					
- 					//Enviamos su dinero actualizado a cada socket
-					try {
+						//Para no enviar nada al mismo que esta saliendo
+	 					if(socket === elemento) return;
+	 					
+	 					//Enviamos su dinero actualizado a cada socket
+						try {
+							
+							elemento.write("WIN");
+							setTimeout(function(){
+												   
+								elemento.write(elemento.dinero.toFixed(2));
+							},1000);
+						} catch(e) {
+							
+							console.log(e);
+						}
 						
-						elemento.write("WIN");
+
+					
+
 						setTimeout(function(){
-											   
-							elemento.write(elemento.dinero.toFixed(2));
-						},1000);
-					} catch(e) {
 						
-						console.log(e);
-					}
-					
 
-				
-
-					setTimeout(function(){
-					
-
-					//Le enviamos closed al cliente android 
-					try {
-					elemento.write("closed");
-					} catch(e) {
-						
-						console.log(e);
-					}
-					//Recibido closed? true en servidor
-					elemento.recibidoClosed=true;
+						//Le enviamos closed al cliente android 
+						try {
+						elemento.write("closed");
+						} catch(e) {
+							
+							console.log(e);
+						}
+						//Recibido closed? true en servidor
+						elemento.recibidoClosed=true;
 
 
-					},2500);
+						},2500);
 
 
 
-				});
-	
+					});
+		
+				}
+
+			
+			   
+			}else{
+			//Si el socket que salio NO estaba en pleno	juego
+			  numDelSocketEnSala--;
 			}
 
 		
-		   
+		
 		}else{
-		//Si el socket que salio NO estaba en pleno	juego
-		  numDelSocketEnSala--;
+			console.log("SE EMITIO SALIR PERO ESTE SOCKET YA HABIA SALIDO :S")
 		}
 
+		
 		
 		
 
@@ -3222,7 +3548,6 @@ var server=net.createServer(function(socket){
 //ESTO SE EJECUTARA CUANDO EL CLIENTE APENAS SE CONECTE AL SERVER////////////////////////////////////////////////////////////////////
 			
 
-console.log("IN SALA3");
 			numDelSocketEnSala++;
 			
 
@@ -3233,6 +3558,8 @@ console.log("IN SALA3");
 			socket.enJuego=false; //****** ¿El socket se encutra en pleno juego?
 			socket.recibidoClosed=false;
 			socket.ronda=0;//***** En que ronda se encuentra el socket
+			socket.conectado=false;
+			socket.yaSalio=false;
 
 		
 
@@ -3244,6 +3571,7 @@ console.log("IN SALA3");
 				arraySockets[socket.sala]=new Array();
 				arraySockets[socket.sala].push(socket);
 				arraySockets[socket.sala][0].write("0");
+				console.log("IN SALA3"+"-"+ socket.sala);
 
 			//SI YA HA SIDO CREADA:
 			}else{
@@ -3255,6 +3583,7 @@ console.log("IN SALA3");
 		   			arraySockets[socket.sala].splice(index, 1,socket);
 					arraySockets[socket.sala][0].write("0");
 					socket.numEnSala=0;
+					console.log("IN SALA3"+"-"+ socket.sala);
 					
 
 					}else if(arraySockets[socket.sala][1]=="NULO"){
@@ -3263,6 +3592,8 @@ console.log("IN SALA3");
 			   			arraySockets[socket.sala].splice(index, 1,socket);
 						arraySockets[socket.sala][1].write("1");
 						socket.numEnSala=1;
+					   console.log("IN SALA3"+"-"+ socket.sala);
+
 						
 
 						
@@ -3272,8 +3603,8 @@ console.log("IN SALA3");
 							var index = arraySockets[socket.sala].indexOf("NULO");
 				   			arraySockets[socket.sala].splice(index, 1,socket);
 							arraySockets[socket.sala][2].write("2");
-							socket.numEnSala=2;
-							
+							socket.numEnSala=2;				
+							console.log("IN SALA3"+"-"+ socket.sala);
 
 						
 
@@ -3282,6 +3613,8 @@ console.log("IN SALA3");
 							//PASAMOS AL SOCKET EL NUMERO QUE LE CORRESPONDERA EN LA SALA
 							var numEnSalaString=socket.numEnSala.toString();
 							socket.write(numEnSalaString);
+							console.log("IN SALA3"+"-"+ socket.sala);
+
 
 							}
 			
@@ -3310,6 +3643,15 @@ console.log("IN SALA3");
 								//Al primer socket de la sala le enviamos "TURNO"
 								try {
 									arraySockets[socket.sala][0].write("TURNO");
+
+									arraySockets[socket.sala][0].setTimeout(16000,function(){
+							        	console.log("socket 1 timeOut");
+							        	if(arraySockets[socket.sala][0].yaSalio==false && arraySockets[socket.sala][0].enJuego==true){							      
+							        		arraySockets[socket.sala][0].emit('end');
+							        	}						        	
+							        	
+							        });
+							        
 							       
 									
 								} catch(e) {
@@ -3326,6 +3668,32 @@ console.log("IN SALA3");
 //CUANDO EL CLIENTE ENVIA DATA////////////////////////////////////////////////////////////////////////////////////////////////////////
 	socket.setEncoding('utf8');
 	socket.on('data',function(data){
+
+		if(socket.enJuego==false && data=="ping"){
+			socket.conectado=true;
+
+				setTimeout(function(){
+					if(socket.enJuego==false){
+						socket.write("pong");
+						socket.conectado=false;
+					}
+
+				},3000);
+
+				setTimeout(function(){
+					if(socket.conectado==false){
+						if(socket.yaSalio==true){
+						}else{
+							if(socket.enJuego==false){
+							socket.emit('end');
+							}
+						}
+					}
+
+				},6000);
+
+
+		}else if(data != "ping" && isNaN(data)==false){
 
 	
 		//Retransmitimos el numero recibido a todos los demas sockets	
@@ -3463,11 +3831,100 @@ console.log("IN SALA3");
 				var posicionActualSocketMas1= socket.numEnSala+1;
 
 				try {
-				
+					//Eliminamos tiempo de espera de 15 segundos para perder al socket 1
+					arraySockets[socket.sala][0].setTimeout(0);
 
+					
+					if(arraySockets[socket.sala][0].turno==true){
+						clearTimeout(arraySockets[socket.sala][0].funcionTimeOut);
+						console.log("SE CANCELA TIMEOUT JUGADOR1")
+						arraySockets[socket.sala][0].turno=false;
+						arraySockets[socket.sala][3].turno=false;
+					
+					}
+					
+					
 					//Enviamos TURNO al siguiente socket
 					arraySockets[socket.sala][posicionActualSocketMas1].write("TURNO");
-	
+					console.log("se envio turno a: "+posicionActualSocketMas1);
+					//La propiedad .turno del siguiete socket se vuelve true
+					arraySockets[socket.sala][posicionActualSocketMas1].turno=true;
+					arraySockets[socket.sala][socket.numEnSala].turno=false;
+					
+					console.log("jugador1-Turno: "+arraySockets[socket.sala][0].turno);
+					console.log("jugador2-Turno: "+arraySockets[socket.sala][1].turno);
+					console.log("jugador3-Turno: "+arraySockets[socket.sala][2].turno);
+					console.log("jugador4-Turno: "+arraySockets[socket.sala][3].turno);
+
+
+					//Si es el turno del 2do socket tendra 15 segundos para enviar algun numero
+					if(arraySockets[socket.sala][1].turno==true){
+						
+					 console.log("COMIENZA A CONTAR TIEMPO PARA JUGADOR 2")
+
+						arraySockets[socket.sala][1].funcionTimeOut= setTimeout(function(){
+
+
+							if(arraySockets[socket.sala][1].turno==true){
+								console.log("JUGADOR 2 ERA SU TURNO Y NO HIZO NADA, TIMEOUT");
+								if(arraySockets[socket.sala][1].yaSalio==false && arraySockets[socket.sala][1].enJuego==true){							      
+								    arraySockets[socket.sala][1].emit('end');
+								}
+							}
+					
+						},16000);
+
+					
+						
+
+					}else if(arraySockets[socket.sala][2].turno==true){
+					
+						console.log("SE CANCELA TIMEOUT JUGADOR 2")
+						clearTimeout(arraySockets[socket.sala][1].funcionTimeOut);
+
+						console.log("COMIENZA A CONTAR TIEMPO PARA JUGADOR 3")
+					  
+					  arraySockets[socket.sala][2].funcionTimeOut=  setTimeout(function(){
+
+							if(arraySockets[socket.sala][2].turno==true){
+								console.log("JUGADOR 3 ERA SU TURNO Y NO HIZO NADA, TIMEOUT");
+								if(arraySockets[socket.sala][2].yaSalio==false && arraySockets[socket.sala][2].enJuego==true){							      
+								    arraySockets[socket.sala][2].emit('end');
+								}
+							}
+					
+						},16000);
+						
+
+					}else if(arraySockets[socket.sala][3].turno==true){
+						console.log("SE CANCELA TIMEOUT JUGADOR 3")
+						clearTimeout(arraySockets[socket.sala][2].funcionTimeOut);
+
+						console.log("COMIENZA A CONTAR TIEMPO PARA JUGADOR 4")
+					  arraySockets[socket.sala][3].funcionTimeOut=setTimeout(function(){
+					  	try {
+					  		if(arraySockets[socket.sala][3].turno==true){
+								console.log("JUGADOR 4 ERA SU TURNO Y NO HIZO NADA, TIMEOUT");
+								if(arraySockets[socket.sala][3].yaSalio==false && arraySockets[socket.sala][3].enJuego==true){							      
+								    arraySockets[socket.sala][3].emit('end');
+								}
+							}
+					  		
+					  	} catch(e) {
+					  		// statements
+					  		console.log(e);
+					  	}
+
+							
+					
+						},16000);
+
+
+					}
+					
+					
+		
+
 
 				} catch(e) {
 					console.log("Error en la linea 232: no se puedo enviar TURNO  al socket 2,al 3 o al 4")
@@ -3479,6 +3936,9 @@ console.log("IN SALA3");
 //>4	//Pero si es el 4to socket de la sala entonces:	
 		//AQUI ES DONDE SE EJECUTAN LOS CALCULOS: QUIEN PIERDE; CUANTO PIERDE; SE REDISTRIBUYE EL DINERO.....!!!!!!!!!!!!!!!!
 		}else if(socket.numEnSala==3){
+			arraySockets[socket.sala][3].turno=false;
+			clearTimeout(arraySockets[socket.sala][3].funcionTimeOut);
+			console.log("Cancalado timeout jugador 4")
 			//Guardamos en n4 lo recibido del socket 4
 			switch (data) {
 					case "10":
@@ -4535,8 +4995,23 @@ console.log("IN SALA3");
 
 			//Despues de 6 segundo enviamos "TURNO" al primer socket del arraySockets[x]
 			setTimeout(function(){
-				try {
+					try {
 				 arraySockets[socket.sala][0].write("TURNO");
+				 arraySockets[socket.sala][0].turno=true;
+
+				   
+					console.log("COMIENZA A CONTAR TIEMPO PARA JUGADOR 1")
+					arraySockets[socket.sala][0].funcionTimeOut=setTimeout(function(){
+					console.log("socket 1 timeOut");
+
+						if(arraySockets[socket.sala][0].turno==true){
+							if(arraySockets[socket.sala][0].yaSalio==false && arraySockets[socket.sala][0].enJuego==true){							      
+							    arraySockets[socket.sala][0].emit('end');
+							}
+						}
+				
+					},16000);
+				 				
 
 				} catch(e) {
 					console.log("Error en la linea 479: No se pudo enviar TURNO al primer socket ")
@@ -4548,7 +5023,7 @@ console.log("IN SALA3");
 		
 		}
 
-
+	}
 			
 		
 	});
@@ -4566,108 +5041,117 @@ console.log("IN SALA3");
 
 	socket.on('end',function(){
 
-			console.log("OUT SALA3 ");
-
-		//Lo sacamos del arraySockets
-		var index = arraySockets[socket.sala].indexOf(socket);
-		
-		//Si la longitud del array es de 3 o menos: Insertamos NULO en el elemento que sale
-		if(arraySockets[socket.sala].length <= 3){
-			
-		  //elimina 1 elemento desde el índice "index", e inserta 'nulo'
-		   arraySockets[socket.sala].splice(index, 1,"NULO");
-
-		
+		console.log("OUT SALA3"+"-"+ socket.sala);
+		if(socket.yaSalio==false){
+			socket.yaSalio=true;
 			
 
-		}else{
-			//elimina 1 elemento desde el índice "index"
-		   arraySockets[socket.sala].splice(index, 1);
-		}
+			//Lo sacamos del arraySockets
+			var index = arraySockets[socket.sala].indexOf(socket);
+			
+			//Si la longitud del array es de 3 o menos: Insertamos NULO en el elemento que sale
+			if(arraySockets[socket.sala].length <= 3){
+				
+			  //elimina 1 elemento desde el índice "index", e inserta 'nulo'
+			   arraySockets[socket.sala].splice(index, 1,"NULO");
+
+			
+				
+
+			}else{
+				//elimina 1 elemento desde el índice "index"
+			   arraySockets[socket.sala].splice(index, 1);
+			}
+			
+
+
+
+			//Si el socket que salio  estaba en pleno juego :			
+			if(socket.enJuego==true){
+				
+				socket.enJuego=false;
+
+				//Si un socket  esta en pleno juego , sale , pero ya recibio "closed" significa que esta saliendo CORRECTAMENTE
+				if(socket.recibidoClosed==true){
+					//console.log("Legalmente ya puede salir pues recibio closed")
+					//console.log("socket.dinero="+socket.dinero);
+
+				//Pero si un socket  esta en pleno juego , sale , y NO recibio "closed" significa que esta saliendo INCORRECTAMENTE
+				}else {			
+					
+					console.log("Se salio un cliente sin haber recibido 'closed' ")
+					console.log("socket.dinero del que salio= "+socket.dinero);
+					
+					partida_numero++;
+					console.log("Terminada partida_numero: "+partida_numero);
+					
+					//SOCKET QUE SALIO PIERDE TODO EL DINERO EN JUEGO: 70% > OTROS JUGADORES, 30% > SERVER
+					//servidorSeQuedaCon(dineroActualDelPerdedor,porcentaje)
+					servidorSeQuedaCon(socket.dinero,30);
+					// reparteDinero(dineroActualDelPerdedor,porcentajePerdida,socket_perdedor,sala) 
+						reparteDinero(socket.dinero , 70,
+								socket, socket.sala);
+					
 		
 
 
+					//Enviamos "closed" a cada socket de la sala en la que se salio incorrectamente un socket  y enviamos tambien dinero actualizado
+					arraySockets[socket.sala].forEach(function(elemento){
 
-		//Si el socket que salio  estaba en pleno juego :			
-		if(socket.enJuego==true){
-			
-			socket.enJuego=false;
-
-			//Si un socket  esta en pleno juego , sale , pero ya recibio "closed" significa que esta saliendo CORRECTAMENTE
-			if(socket.recibidoClosed==true){
-				
-
-			//Pero si un socket  esta en pleno juego , sale , y NO recibio "closed" significa que esta saliendo INCORRECTAMENTE
-			}else {			
-				
-				console.log("Se salio un cliente sin haber recibido 'closed' ")
-				console.log("socket.dinero del que salio= "+socket.dinero);
-
-				partida_numero++;
-				console.log("Terminada partida_numero: "+partida_numero);
-
-				//SOCKET QUE SALIO PIERDE TODO EL DINERO EN JUEGO: 70% > OTROS JUGADORES, 30% > SERVER
-				//servidorSeQuedaCon(dineroActualDelPerdedor,porcentaje)
-				servidorSeQuedaCon(socket.dinero,30);
-				// reparteDinero(dineroActualDelPerdedor,porcentajePerdida,socket_perdedor,sala) 
-					reparteDinero(socket.dinero , 70,
-							socket, socket.sala);
-				
-	
-
-
-				//Enviamos "closed" a cada socket de la sala en la que se salio incorrectamente un socket  y enviamos tambien dinero actualizado
-				arraySockets[socket.sala].forEach(function(elemento){
-
-					//Para no enviar nada al mismo que esta saliendo
- 					if(socket === elemento) return;
- 					
- 					//Enviamos su dinero actualizado a cada socket
-					try {
+						//Para no enviar nada al mismo que esta saliendo
+	 					if(socket === elemento) return;
+	 					
+	 					//Enviamos su dinero actualizado a cada socket
+						try {
+							
+							elemento.write("WIN");
+							setTimeout(function(){
+												   
+								elemento.write(elemento.dinero.toFixed(2));
+							},1000);
+						} catch(e) {
+							
+							console.log(e);
+						}
 						
-						elemento.write("WIN");
+
+					
+
 						setTimeout(function(){
-											   
-							elemento.write(elemento.dinero.toFixed(2));
-						},1000);
-					} catch(e) {
 						
-						console.log(e);
-					}
-					
 
-				
-
-					setTimeout(function(){
-					
-
-					//Le enviamos closed al cliente android 
-					try {
-					elemento.write("closed");
-					} catch(e) {
-						
-						console.log(e);
-					}
-					//Recibido closed? true en servidor
-					elemento.recibidoClosed=true;
+						//Le enviamos closed al cliente android 
+						try {
+						elemento.write("closed");
+						} catch(e) {
+							
+							console.log(e);
+						}
+						//Recibido closed? true en servidor
+						elemento.recibidoClosed=true;
 
 
-					},2500);
+						},2500);
 
 
 
-				});
-	
+					});
+		
+				}
+
+			
+			   
+			}else{
+			//Si el socket que salio NO estaba en pleno	juego
+			  numDelSocketEnSala--;
 			}
 
 		
-		   
+		
 		}else{
-		//Si el socket que salio NO estaba en pleno	juego
-		  numDelSocketEnSala--;
+			console.log("SE EMITIO SALIR PERO ESTE SOCKET YA HABIA SALIDO :S")
 		}
 
-		
 		
 
 
@@ -4816,7 +5300,7 @@ var dineroServidor=0; //El valor de esta variable es enviado por correo y resete
 var server=net.createServer(function(socket){
 	
 //ESTO SE EJECUTARA CUANDO EL CLIENTE APENAS SE CONECTE AL SERVER////////////////////////////////////////////////////////////////////
-			console.log("IN SALA4");
+			
 
 		
 			numDelSocketEnSala++;
@@ -4828,6 +5312,8 @@ var server=net.createServer(function(socket){
 			socket.enJuego=false; //****** ¿El socket se encutra en pleno juego?
 			socket.recibidoClosed=false;
 			socket.ronda=0;//***** En que ronda se encuentra el socket
+			socket.conectado=false;
+			socket.yaSalio=false;
 
 		
 
@@ -4839,6 +5325,7 @@ var server=net.createServer(function(socket){
 				arraySockets[socket.sala]=new Array();
 				arraySockets[socket.sala].push(socket);
 				arraySockets[socket.sala][0].write("0");
+				console.log("IN SALA4"+"-"+ socket.sala);
 
 			//SI YA HA SIDO CREADA:
 			}else{
@@ -4850,6 +5337,8 @@ var server=net.createServer(function(socket){
 		   			arraySockets[socket.sala].splice(index, 1,socket);
 					arraySockets[socket.sala][0].write("0");
 					socket.numEnSala=0;
+					console.log("IN SALA4"+"-"+ socket.sala);
+
 					
 
 					}else if(arraySockets[socket.sala][1]=="NULO"){
@@ -4858,6 +5347,8 @@ var server=net.createServer(function(socket){
 			   			arraySockets[socket.sala].splice(index, 1,socket);
 						arraySockets[socket.sala][1].write("1");
 						socket.numEnSala=1;
+										console.log("IN SALA4"+"-"+ socket.sala);
+
 						
 
 						
@@ -4868,6 +5359,8 @@ var server=net.createServer(function(socket){
 				   			arraySockets[socket.sala].splice(index, 1,socket);
 							arraySockets[socket.sala][2].write("2");
 							socket.numEnSala=2;
+											console.log("IN SALA4"+"-"+ socket.sala);
+
 							
 
 						
@@ -4877,6 +5370,8 @@ var server=net.createServer(function(socket){
 							//PASAMOS AL SOCKET EL NUMERO QUE LE CORRESPONDERA EN LA SALA
 							var numEnSalaString=socket.numEnSala.toString();
 							socket.write(numEnSalaString);
+											console.log("IN SALA4"+"-"+ socket.sala);
+
 
 							}
 			
@@ -4905,11 +5400,21 @@ var server=net.createServer(function(socket){
 								//Al primer socket de la sala le enviamos "TURNO"
 								try {
 									arraySockets[socket.sala][0].write("TURNO");
+
+									arraySockets[socket.sala][0].setTimeout(16000,function(){
+							        	console.log("socket 1 timeOut");
+							        	if(arraySockets[socket.sala][0].yaSalio==false && arraySockets[socket.sala][0].enJuego==true){							      
+							        		arraySockets[socket.sala][0].emit('end');
+							        	}else{
+							        		console.log("Socket ya habia slaido")
+							        	}							        	
+							        	
+							        });
 							        
 
 									
 								} catch(e) {
-									console.log("Error en la linea 62: no se pudo enviar TURNO al primer socket")
+									console.log("Error en la linea 5397: no se pudo enviar TURNO al primer socket")
 									console.log(e);
 								}
 							  	
@@ -4922,6 +5427,32 @@ var server=net.createServer(function(socket){
 //CUANDO EL CLIENTE ENVIA DATA////////////////////////////////////////////////////////////////////////////////////////////////////////
 	socket.setEncoding('utf8');
 	socket.on('data',function(data){
+
+		if(socket.enJuego==false && data=="ping"){
+			socket.conectado=true;
+
+				setTimeout(function(){
+					if(socket.enJuego==false){
+						socket.write("pong");
+						socket.conectado=false;
+					}
+
+				},3000);
+
+				setTimeout(function(){
+					if(socket.conectado==false){
+						if(socket.yaSalio==true){
+						}else{
+							if(socket.enJuego==false){
+							socket.emit('end');
+							}
+						}
+					}
+
+				},6000);
+
+
+		}else if(data != "ping" && isNaN(data)==false){
 
 	
 		//Retransmitimos el numero recibido a todos los demas sockets	
@@ -5059,12 +5590,99 @@ var server=net.createServer(function(socket){
 				var posicionActualSocketMas1= socket.numEnSala+1;
 
 				try {
+					//Eliminamos tiempo de espera de 15 segundos para perder al socket 1
+					arraySockets[socket.sala][0].setTimeout(0);
+
+					
+					if(arraySockets[socket.sala][0].turno==true){
+						clearTimeout(arraySockets[socket.sala][0].funcionTimeOut);
+						console.log("SE CANCELA TIMEOUT JUGADOR1")
+						arraySockets[socket.sala][0].turno=false;
+						arraySockets[socket.sala][3].turno=false;
+					
+					}
+					
 					
 					//Enviamos TURNO al siguiente socket
 					arraySockets[socket.sala][posicionActualSocketMas1].write("TURNO");
+					console.log("se envio turno a: "+posicionActualSocketMas1);
+					//La propiedad .turno del siguiete socket se vuelve true
+					arraySockets[socket.sala][posicionActualSocketMas1].turno=true;
+					arraySockets[socket.sala][socket.numEnSala].turno=false;
+					
+					console.log("jugador1-Turno: "+arraySockets[socket.sala][0].turno);
+					console.log("jugador2-Turno: "+arraySockets[socket.sala][1].turno);
+					console.log("jugador3-Turno: "+arraySockets[socket.sala][2].turno);
+					console.log("jugador4-Turno: "+arraySockets[socket.sala][3].turno);
+
+
+					//Si es el turno del 2do socket tendra 15 segundos para enviar algun numero
+					if(arraySockets[socket.sala][1].turno==true){
+						
+					 console.log("COMIENZA A CONTAR TIEMPO PARA JUGADOR 2")
+
+						arraySockets[socket.sala][1].funcionTimeOut= setTimeout(function(){
+
+
+							if(arraySockets[socket.sala][1].turno==true){
+								console.log("JUGADOR 2 ERA SU TURNO Y NO HIZO NADA, TIMEOUT");
+								if(arraySockets[socket.sala][1].yaSalio==false && arraySockets[socket.sala][1].enJuego==true){							      
+								    arraySockets[socket.sala][1].emit('end');
+								}
+							}
+					
+						},16000);
+
+					
+						
+
+					}else if(arraySockets[socket.sala][2].turno==true){
+					
+						console.log("SE CANCELA TIMEOUT JUGADOR 2")
+						clearTimeout(arraySockets[socket.sala][1].funcionTimeOut);
+
+						console.log("COMIENZA A CONTAR TIEMPO PARA JUGADOR 3")
+					  
+					  arraySockets[socket.sala][2].funcionTimeOut=  setTimeout(function(){
+
+							if(arraySockets[socket.sala][2].turno==true){
+								console.log("JUGADOR 3 ERA SU TURNO Y NO HIZO NADA, TIMEOUT");
+								if(arraySockets[socket.sala][2].yaSalio==false && arraySockets[socket.sala][2].enJuego==true){							      
+								    arraySockets[socket.sala][2].emit('end');
+								}
+							}
+					
+						},16000);
+						
+
+					}else if(arraySockets[socket.sala][3].turno==true){
+						console.log("SE CANCELA TIMEOUT JUGADOR 3")
+						clearTimeout(arraySockets[socket.sala][2].funcionTimeOut);
+
+						console.log("COMIENZA A CONTAR TIEMPO PARA JUGADOR 4")
+					 arraySockets[socket.sala][3].funcionTimeOut=setTimeout(function(){
+					  	try {
+					  		if(arraySockets[socket.sala][3].turno==true){
+								console.log("JUGADOR 4 ERA SU TURNO Y NO HIZO NADA, TIMEOUT");
+								if(arraySockets[socket.sala][3].yaSalio==false && arraySockets[socket.sala][3].enJuego==true){							      
+								    arraySockets[socket.sala][3].emit('end');
+								}
+							}
+					  		
+					  	} catch(e) {
+					  		// statements
+					  		console.log(e);
+					  	}
+
+							
+					
+						},16000);
+
+
+					}
 					
 					
-					
+		
 
 
 				} catch(e) {
@@ -5077,6 +5695,9 @@ var server=net.createServer(function(socket){
 //>4	//Pero si es el 4to socket de la sala entonces:	
 		//AQUI ES DONDE SE EJECUTAN LOS CALCULOS: QUIEN PIERDE; CUANTO PIERDE; SE REDISTRIBUYE EL DINERO.....!!!!!!!!!!!!!!!!
 		}else if(socket.numEnSala==3){
+			arraySockets[socket.sala][3].turno=false;
+			clearTimeout(arraySockets[socket.sala][3].funcionTimeOut);
+			console.log("Cancalado timeout jugador 4")
 			//Guardamos en n4 lo recibido del socket 4
 			switch (data) {
 					case "10":
@@ -5898,6 +6519,21 @@ var server=net.createServer(function(socket){
 			setTimeout(function(){
 				try {
 				 arraySockets[socket.sala][0].write("TURNO");
+				 arraySockets[socket.sala][0].turno=true;
+
+				   
+					console.log("COMIENZA A CONTAR TIEMPO PARA JUGADOR 1")
+					arraySockets[socket.sala][0].funcionTimeOut=setTimeout(function(){
+					console.log("socket 1 timeOut");
+
+						if(arraySockets[socket.sala][0].turno==true){
+							if(arraySockets[socket.sala][0].yaSalio==false && arraySockets[socket.sala][0].enJuego==true){							      
+							    arraySockets[socket.sala][0].emit('end');
+							}
+						}
+				
+					},16000);
+				 				
 
 				} catch(e) {
 					console.log("Error en la linea 479: No se pudo enviar TURNO al primer socket ")
@@ -5910,7 +6546,7 @@ var server=net.createServer(function(socket){
 		}
 
 
-			
+		}		
 		
 	});
 
@@ -5926,111 +6562,118 @@ var server=net.createServer(function(socket){
 
 
 	socket.on('end',function(){
-				console.log("OUT SALA4 ");
-
-		//Lo sacamos del arraySockets
-		var index = arraySockets[socket.sala].indexOf(socket);
-		
-		//Si la longitud del array es de 3 o menos: Insertamos NULO en el elemento que sale
-		if(arraySockets[socket.sala].length <= 3){
-			
-		  //elimina 1 elemento desde el índice "index", e inserta 'nulo'
-		   arraySockets[socket.sala].splice(index, 1,"NULO");
-
-		
+			console.log("OUT SALA4"+"-"+ socket.sala);
+if(socket.yaSalio==false){
+			socket.yaSalio=true;
 			
 
-		}else{
-			//elimina 1 elemento desde el índice "index"
-		   arraySockets[socket.sala].splice(index, 1);
-		}
+			//Lo sacamos del arraySockets
+			var index = arraySockets[socket.sala].indexOf(socket);
+			
+			//Si la longitud del array es de 3 o menos: Insertamos NULO en el elemento que sale
+			if(arraySockets[socket.sala].length <= 3){
+				
+			  //elimina 1 elemento desde el índice "index", e inserta 'nulo'
+			   arraySockets[socket.sala].splice(index, 1,"NULO");
+
+			
+				
+
+			}else{
+				//elimina 1 elemento desde el índice "index"
+			   arraySockets[socket.sala].splice(index, 1);
+			}
+			
+
+
+
+			//Si el socket que salio  estaba en pleno juego :			
+			if(socket.enJuego==true){
+				
+				socket.enJuego=false;
+
+				//Si un socket  esta en pleno juego , sale , pero ya recibio "closed" significa que esta saliendo CORRECTAMENTE
+				if(socket.recibidoClosed==true){
+					//console.log("Legalmente ya puede salir pues recibio closed")
+					//console.log("socket.dinero="+socket.dinero);
+
+				//Pero si un socket  esta en pleno juego , sale , y NO recibio "closed" significa que esta saliendo INCORRECTAMENTE
+				}else {			
+					
+					console.log("Se salio un cliente sin haber recibido 'closed' ")
+					console.log("socket.dinero del que salio= "+socket.dinero);
+					
+					partida_numero++;
+					console.log("Terminada partida_numero: "+partida_numero);
+					
+					//SOCKET QUE SALIO PIERDE TODO EL DINERO EN JUEGO: 70% > OTROS JUGADORES, 30% > SERVER
+					//servidorSeQuedaCon(dineroActualDelPerdedor,porcentaje)
+					servidorSeQuedaCon(socket.dinero,30);
+					// reparteDinero(dineroActualDelPerdedor,porcentajePerdida,socket_perdedor,sala) 
+						reparteDinero(socket.dinero , 70,
+								socket, socket.sala);
+					
 		
 
 
+					//Enviamos "closed" a cada socket de la sala en la que se salio incorrectamente un socket  y enviamos tambien dinero actualizado
+					arraySockets[socket.sala].forEach(function(elemento){
 
-		//Si el socket que salio  estaba en pleno juego :			
-		if(socket.enJuego==true){
-			
-			socket.enJuego=false;
-
-			//Si un socket  esta en pleno juego , sale , pero ya recibio "closed" significa que esta saliendo CORRECTAMENTE
-			if(socket.recibidoClosed==true){
-				
-
-			//Pero si un socket  esta en pleno juego , sale , y NO recibio "closed" significa que esta saliendo INCORRECTAMENTE
-			}else {			
-				
-				console.log("Se salio un cliente sin haber recibido 'closed' ")
-				console.log("socket.dinero del que salio= "+socket.dinero);
-
-				partida_numero++;
-				console.log("Terminada partida_numero: "+partida_numero);
-
-
-				//SOCKET QUE SALIO PIERDE TODO EL DINERO EN JUEGO: 70% > OTROS JUGADORES, 30% > SERVER
-				//servidorSeQuedaCon(dineroActualDelPerdedor,porcentaje)
-				servidorSeQuedaCon(socket.dinero,30);
-				// reparteDinero(dineroActualDelPerdedor,porcentajePerdida,socket_perdedor,sala) 
-					reparteDinero(socket.dinero , 70,
-							socket, socket.sala);
-				
-	
-
-
-				//Enviamos "closed" a cada socket de la sala en la que se salio incorrectamente un socket  y enviamos tambien dinero actualizado
-				arraySockets[socket.sala].forEach(function(elemento){
-
-					//Para no enviar nada al mismo que esta saliendo
- 					if(socket === elemento) return;
- 					
- 					//Enviamos su dinero actualizado a cada socket
-					try {
+						//Para no enviar nada al mismo que esta saliendo
+	 					if(socket === elemento) return;
+	 					
+	 					//Enviamos su dinero actualizado a cada socket
+						try {
+							
+							elemento.write("WIN");
+							setTimeout(function(){
+												   
+								elemento.write(elemento.dinero.toFixed(2));
+							},1000);
+						} catch(e) {
+							
+							console.log(e);
+						}
 						
-						elemento.write("WIN");
+
+					
+
 						setTimeout(function(){
-											   
-							elemento.write(elemento.dinero.toFixed(2));
-						},1000);
-					} catch(e) {
 						
-						console.log(e);
-					}
-					
 
-				
-
-					setTimeout(function(){
-					
-
-					//Le enviamos closed al cliente android 
-					try {
-					elemento.write("closed");
-					} catch(e) {
-						
-						console.log(e);
-					}
-					//Recibido closed? true en servidor
-					elemento.recibidoClosed=true;
+						//Le enviamos closed al cliente android 
+						try {
+						elemento.write("closed");
+						} catch(e) {
+							
+							console.log(e);
+						}
+						//Recibido closed? true en servidor
+						elemento.recibidoClosed=true;
 
 
-					},2500);
+						},2500);
 
 
 
-				});
-	
+					});
+		
+				}
+
+			
+			   
+			}else{
+			//Si el socket que salio NO estaba en pleno	juego
+			  numDelSocketEnSala--;
 			}
 
 		
-		   
+		
 		}else{
-		//Si el socket que salio NO estaba en pleno	juego
-		  numDelSocketEnSala--;
+			console.log("SE EMITIO SALIR PERO ESTE SOCKET YA HABIA SALIDO :S")
 		}
 
 		
-		
-
 
 		
 		
